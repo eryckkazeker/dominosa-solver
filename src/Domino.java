@@ -1,4 +1,5 @@
 public class Domino {
+
   private int value1;
   private int value2;
 

@@ -13,9 +13,6 @@ public class Solver {
 
     Map<Domino, Set<Pair>> initialBoard = new HashMap<Domino,Set<Pair>>(game.getBoard());
     Set<Domino> solvedDominoes = new LinkedHashSet<>();
-
-    // System.out.println(initialBoard);
-    // System.out.println(game.getBoard());
     
     trySolve(initialBoard, solvedDominoes, "0");
 
@@ -25,11 +22,6 @@ public class Solver {
     boolean end = false;
 
     while (!end) {
-
-      System.out.println("Operation: " +id);
-      // System.out.println("Solved Dominoes: "+ solvedDominoes);
-      // System.out.println("==================================================");
-      // printBoard(board);
 
       // if success print board return true
       if (isGameDone(board)) {
@@ -60,10 +52,11 @@ public class Solver {
       for(Pair p : board.get(unsolvedDomino)) {
         String opId = new String(id + idCounter);
         Map<Domino, Set<Pair>> hypotesisBoard = deepCopy(board);
+        Set<Domino> hypotesisSolvedSet = deepCopy(solvedDominoes);
         Set<Pair> solvedSet = new HashSet<>();
         solvedSet.add(p);
         hypotesisBoard.put(unsolvedDomino, solvedSet);
-        end = trySolve(hypotesisBoard, solvedDominoes, opId);
+        end = trySolve(hypotesisBoard, hypotesisSolvedSet, opId);
         idCounter++;
       }
 
@@ -84,6 +77,17 @@ public class Solver {
     });
 
     return clone;
+  }
+
+  private Set<Domino> deepCopy(Set<Domino> other) {
+    Set<Domino> clone = new HashSet<>();
+
+    other.forEach(domino -> {
+      clone.add(new Domino(domino.getValue1(), domino.getValue2()));
+    });
+
+    return clone;
+
   }
 
   private void printBoard(Map<Domino, Set<Pair>> board) {
@@ -137,7 +141,7 @@ public class Solver {
     List<Pair> pairList = new ArrayList<>();
     var pairSets = board.values();
     pairSets.forEach(set -> {
-      if (set != null) {
+      if (set != null && set.size() > 1) {
         pairList.addAll(set);
       }
     });
@@ -162,13 +166,12 @@ public class Solver {
 
     var uniquePointSetOptional = pointMap.values().stream().filter(set -> set.size() == 1).findFirst();
     if (!uniquePointSetOptional.isPresent()) {
-      // System.err.println("I couldn't find any unique point pairs");
       return null;
     }
 
     var uniquePointSet = uniquePointSetOptional.get();
     var resultPair = (Pair)uniquePointSet.toArray()[0];
-    // System.out.println("Found solved Domino: "+ resultPair.toString());
+
     return resultPair;
   }
 
@@ -178,13 +181,10 @@ public class Solver {
 
   private boolean isGameDone(Map<Domino, Set<Pair>> board) {
     var dominoes = board.keySet();
-    // System.out.println("Dominoes "+dominoes);
 
     var pairs = board.values().stream().flatMap(set -> set.stream()).collect(Collectors.toSet());
-    // System.out.println("Pairs "+pairs);
 
     var points = pairs.stream().flatMap(p -> Set.of(p.getP1(), p.getP2()).stream()).collect(Collectors.toSet());
-
 
     if (dominoes.size() == pairs.size()) {
       return pairs.size()*2 == points.size();
@@ -196,13 +196,13 @@ public class Solver {
     var boardEntries = board.entrySet();
     var solvedDominoOptional = boardEntries.stream().filter(t -> t.getValue() != null && t.getValue().size() == 1 && !solvedDominoes.contains(t.getKey())).findFirst();
     if (!solvedDominoOptional.isPresent()) {
-      // System.err.println("I couldn't find any resolved dominoes");
       return null;
     }
     var solvedPairSet = solvedDominoOptional.get().getValue();
-    solvedDominoes.add(solvedDominoOptional.get().getKey());
+    var domino = solvedDominoOptional.get().getKey();
+    System.out.println("Solved: "+domino);
+    solvedDominoes.add(domino);
     var solvedPair = (Pair)solvedPairSet.toArray()[0];
-    // System.out.println("Found solved Domino: "+ solvedPair.toString());
     removeCollisions(solvedPair, board);
 
     return solvedPair;
@@ -212,14 +212,11 @@ public class Solver {
     
     if (solvedPair == null) return;
 
-
     board.values().forEach((set) -> {
       if(set != null) {
-        set.removeAll(set.stream().filter(pair -> pair.collidesWith(solvedPair)).toList());
+        set.removeAll(set.stream().filter(pair -> pair.collidesWith(solvedPair)).collect(Collectors.toList()));
       }
     });
-
-    // System.out.println(board);
 
   }
   
